@@ -1,2 +1,2 @@
-# AID-Salt API
+# Salt API
  
