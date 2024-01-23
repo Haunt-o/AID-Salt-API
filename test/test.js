@@ -267,12 +267,11 @@ describe('Utils::basic', function() {
 });
 
 describe('Salt::Vars', function() {
-	// Create state object for testing before each test.
-	beforeEach(function() {
-		state = { vars: {} }
-	});
-
 	describe('getDSV()', function() {
+		this.beforeEach(function() {
+			state = { vars: {} }
+		});
+
 		it('should set a DSV object if valid form', function() {
 			$.getDSV('!!!a::b::c\n', state)
 			assert.equal(state.DSV, 'a::b::c');
@@ -297,6 +296,54 @@ describe('Salt::Vars', function() {
 
 		it('should return false if no DSV values', function() {
 			assert.equal($.getDSV('!!!::\n'), false);
+		});
+	});
+
+	describe('loadVars()', function() {
+		this.beforeEach(function() {
+			state = { vars: {}, DSV: 'x::y::z' }
+			// Reset varlist delimiter since it gets changed.
+			$.delimiters.DSV.varList = /[\s,]+/g
+		});
+
+		it('should load DSV into vars if found', function() {
+			$.loadVars('a b c', state)
+			assert.deepEqual(state.vars, { a: 'x', b: 'y', c: 'z' });
+		});
+
+		it('should also allow commas in varlist', function() {
+			$.loadVars('a, b, c', state)
+			assert.deepEqual(state.vars, { a: 'x', b: 'y', c: 'z' });
+		});
+
+		it('should allow other delimiters if varList delimiter changed', function() {
+			// Dash instead of comma.
+			$.delimiters.DSV.varList = /[\s-]+/g
+			$.loadVars('a - b - c', state)
+			assert.deepEqual(state.vars, { a: 'x', b: 'y', c: 'z' });
+		})
+
+		it('should throw error if DSV not found', function() {
+			state.DSV = undefined
+			assert.throws(() => $.loadVars('a b c', state), Error);
+		});
+	});
+
+	describe('splitVar', function() {
+		this.beforeEach(function() {
+			state = { vars: { thing: 'x,y,z' } }
+		});
+
+		it('should split the given variable into an object', function() {
+			$.splitVar('thing', ',', 'a,b,c', state)
+			assert.deepEqual(state.vars, { thing: { a: 'x', b: 'y', c: 'z', _value: 'x,y,z' } });
+		});
+
+		it('should create an empty object with null props if var does not exist', function() {
+			$.splitVar('does not exist', ',', 'a, b, c', state)
+			assert.deepEqual(state.vars, {
+				thing: 'x,y,z', 'does not exist': { a: null, b: null, c: null } 
+			});
 		});
 	});
 });

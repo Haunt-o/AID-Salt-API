@@ -163,7 +163,7 @@ $.utils = {
  * Can be changed by user if wanted.
  */
 $.delimiters = {
-	DSV: { prefix: '!!!', vars: '::', end: '\n' },
+	DSV: { prefix: '!!!', vars: '::', end: '\n', varList: /[\s,]+/g },
   command: { prefix: '>' }
 }
 
@@ -214,8 +214,12 @@ $.getDSV = function(text, stateObj=state) {
 *                                intended to be changed for testing.
  */
 $.loadVars = function(varList, stateObj=state) {
+  if (stateObj.DSV == undefined) {
+    throw new Error('DSV not found in state object to load.')
+  }
+
 	let values = $.utils.stringToArray(stateObj.DSV, $.delimiters.DSV.vars)
-	let varNames = $.utils.stringToArray(varList)
+	let varNames = $.utils.stringToArray(varList, $.delimiters.DSV.varList)
 	
 	varNames.forEach(name => stateObj.vars[name] = values.shift())
 }
